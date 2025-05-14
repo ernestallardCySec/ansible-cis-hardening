@@ -1,0 +1,6 @@
+# Ansible
+*.retry
+inventory/hosts
+# OS/editor
+*~
+.DS_Store

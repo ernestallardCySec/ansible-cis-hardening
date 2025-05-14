@@ -1,0 +1,59 @@
+---
+- name: Disable SSH root login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+  notify: restart sshd
+
+- name: Enforce key-only SSH auth
+  lineinfile: 
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+  notify: restart ssh
+
+- name: Change SSH port
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port'
+    line: "Port {{ ssh_port }}"
+  notify: restart sshd
+
+- name: Ensure firewalld is installed
+  yum:
+    name: firewalld
+    state: present
+
+- name: Enable and start firewalld
+  service:
+    name: firewalld
+    enabled: yes
+    state: started
+
+- name: Block incoming HTTP globally
+  ansible.posix.firewalld:
+    service: http
+    permanent: yes
+    state: disabled
+    immediate: yes
+
+- name: Allow incoming HTTP from management net
+  ansible.posix.firewalld:
+    zone: public
+    rich_rule: 'rule family="ipv4" source address="192.168.1.0/24" service name="http" accept'
+    permanent: yes
+    state: enabled
+    immediate: yes
+
+- name: Ensure SELinux is enforcing
+  command: setenforce 1
+  when: ansible_selinux.status != "enabled"
+
+- name: Persist SELinux enforcing in config
+  replace:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    replace: 'SELINUX=enforcing'
+
+

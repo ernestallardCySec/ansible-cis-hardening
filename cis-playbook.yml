@@ -1,0 +1,7 @@
+---
+- name: Apply CIS hardening to localhost
+  hosts: local
+  become: yes
+  roles:
+    - cis-hardening
+
